@@ -9,100 +9,134 @@ dat = read.csv('Diabetes.csv', stringsAsFactors=T, head=T)
 #Explore Dataset
 str(dat)
 
+hist(dat$Diabetes_012)
+hist(dat$BMI)
+hist(dat$PhysHlth)
+hist(dat$Age)
+hist(dat$Education)
+
 #Dimension of the dataset
 dim(dat)
 
 #Summary of dataset
 summary(dat)
 
-#Taking sample of 1000 from the dataset
-sample_index <- sample(nrow(dat),1000)
-sample_dataset <- dat[sample_index,]
-rownames(sample_dataset) <- NULL
-
 #Columns
-colnames(sample_dataset)
+colnames(dat)
 
 #Rename the Column Diabetes_012 to Diabetes_Type
-colnames(sample_dataset)[1] <- "Diabetes_Type"
+colnames(dat)[1] <- "Diabetes_Type"
 
 #Cleaning Dataset
 
 #Missing Value Count
-sum(is.na(sample_dataset))
+sum(is.na(dat))
 
 #Unique Values
 
 #BMI
-sort(unique(sample_dataset$BMI))
+sort(unique(dat$BMI))
 
 #General Health
-sort(unique(sample_dataset$GenHlth))
+sort(unique(dat$GenHlth))
 # 1 = Excellent, 2 = Very Good, 3 = Good, 4 = Fair,  5 = Poor
 
 #Mental Health Scale
-sort(unique(sample_dataset$MentHlth))
+sort(unique(dat$MentHlth))
 
 #Physical Health
-sort(unique(sample_dataset$PhysHlth))
+sort(unique(dat$PhysHlth))
 
 #Age
-sort(unique(sample_dataset$Age))
+sort(unique(dat$Age))
 
 #Education
-sort(unique(sample_dataset$Education))
+sort(unique(dat$Education))
 
 #Income
-sort(unique(sample_dataset$Income))
+sort(unique(dat$Income))
 
 #Diabetes Type
-sort(unique(sample_dataset$Diabetes_Type))
+sort(unique(dat$Diabetes_Type))
 
 
 library(dplyr)
-counts <- table(sample_dataset$Diabetes_Type)
-
-#Changing the values of '2.0' to '1.0' to make it Binary Logistic
-#sample_dataset$Diabetes_Type <- ifelse(sample_dataset$Diabetes_Type == 2.0, 1.0, sample_dataset$Diabetes_Type)
-
-sample_dataset$Diabetes_Type[sample_dataset$Diabetes_Type== 2.0] <- 1.0
-
-counts <- table(sample_dataset$Diabetes_Type)
-
-#Preprocessing
-#Visualizing the Correlation/Missing Values
-#install.packages('gplots')
-library(gplots)
-correlation_matrix <- cor(sample_dataset)
-heatmap.2(correlation_matrix,
-        col = colorRampPalette(c("blue", "white", "red"))(20),
-        main = "Correlation Heatmap",
-        )
-
-#Visualizing for Outliers
-#Continuous variables in the dataset - BMI and Age
-
-hist(sample_dataset$BMI)
-
-hist(sample_dataset$Age)
-
-#Replacing 2's with 1's so having only 2 categories : 0 - Non Diabetic, 1 - Diabetic
-sample_dataset$Diabetes_Type <- replace(sample_dataset$Diabetes_Type, 2, 1)
-
-#Replacing the floating point variables of Diabetes_Type to Integers
-sample_dataset$Diabetes_Type <- as.integer(sample_dataset$Diabetes_Type)
 
 #Replacing the levels of General Health
 #Before : 1= Excellent, 2 = Very Good, 3=Good, 4=Fair, 5=Poor
 #After : 5= Excellent, 4= Very Good, 3 = Good, 2= Fair, 1=Poor
-sample_dataset$GH <- sample_dataset$GenHlth
-sample_dataset$GH <- match(sample_dataset$GH, c(1, 2, 3, 4, 5), nomatch = NA)
+dat <- dat %>% mutate(GenHlth = recode(GenHlth, `1` = 5, `2` = 4, `3` = 3, `4` = 2, `5` = 1))
+
+counts <- table(dat$Diabetes_Type)
+
+#Changing the values of '2.0' to '1.0' to make it Binary Logistic
+
+dat$Diabetes_Type[dat$Diabetes_Type== 2.0] <- 1.0
+
+counts_before <- table(dat$Diabetes_Type)
+
+#We see a class imbalance of the target variable
+#We try to both Oversample minority class(1's) using SMOTE
+#Also we do Undersampling of the majority class(0's)
+
+#First we apply SMOTE (Oversampling technique)
+
+library(smotefamily)
+library(dplyr)
+library(tidyverse)
+sum(is.na(dat))
+smote <- SMOTE(dat, dat$Diabetes_Type)
+oversampled_dataset <- smote$data[,-23]
+counts_after_oversampling <- table(oversampled_dataset$Diabetes_Type)
+
+#Exploring dataset after oversampling
+sum(is.na(oversampled_dataset))
+
+str(oversampled_dataset)
+
+#We floor the values of variables because after SMOTE, so the synthetic values generated are consistent
+oversampled_dataset <- floor(oversampled_dataset)
+
+#Checking the correlation
+library(gplots)
+correlation_matrix_oversampled <- cor(oversampled_dataset)
+heatmap.2(correlation_matrix_oversampled,
+        col = colorRampPalette(c("blue", "white", "red"))(20),
+        main = "Correlation Heatmap"
+        )
 
 
-# Count of Diabetes_Type and HighBP table
-diabetes_bp <- as.data.frame(table(sample_dataset$Diabetes_Type, sample_dataset$HighBP))
-colnames(diabetes_bp) <- c("Diabetes_Type", "HighBP", "Count")
-print(diabetes_bp)
+#Replacing the floating point variables of Diabetes_Type to Integers
+oversampled_dataset$Diabetes_Type <- as.integer(oversampled_dataset$Diabetes_Type)
 
-#Changing the name of the sample_dataset to be used for further model building
-dataset <- sample_dataset
+
+######Undersampling########
+
+dataset_2 <- dat %>% filter(Diabetes_Type == 0) %>% slice(sample(n(), 39978))
+dataset_1 <- dat %>% filter(Diabetes_Type ==1) %>% slice(sample(n(), 39978))
+undersampled_dataset <- rbind(dataset_1,dataset_2)
+counts_after_undersampling <- table(undersampled_dataset$Diabetes_Type)
+
+install.packages(c("gplots", "RColorBrewer"))
+library(gplots)
+library(RColorBrewer)
+correlation_matrix_undersampled <- cor(undersampled_dataset)
+heatmap.2(correlation_matrix_undersampled,
+          col = colorRampPalette(c("blue", "white", "red"))(20),
+          main = "Correlation Heatmap"
+)
+
+
+#Replacing the floating point variables of Diabetes_Type to Integers
+undersampled_dataset$Diabetes_Type <- as.integer(undersampled_dataset$Diabetes_Type)
+
+
+#Comparing the Target Variable Counts
+counts_before
+counts_after_undersampling
+counts_after_oversampling
+
+##Variable names to be used for further##
+dat #Original Dataset
+undersampled_dataset #undersampled Dataset
+oversampled_dataset #SMOTE oversampled Dataset
