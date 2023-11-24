@@ -1,4 +1,4 @@
-# Diabetes Health Indicators Dataset
+# Diabetes Prediction using Logistic Regression, kNN , Classification Trees and Random Forest
 
 ## Overview
 
