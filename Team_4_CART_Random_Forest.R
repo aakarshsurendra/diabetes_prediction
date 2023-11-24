@@ -336,7 +336,6 @@ install.packages("caret")
 library(caret)
 library(randomForest)
 
-# Assuming your dataset is named 'your_data' with a binary target variable 'target_variable'
 
 # Split your data into training and testing sets
 set.seed(123)  # for reproducibility
@@ -347,7 +346,6 @@ test_data <- undersampled_dataset[-split_index, ]
 train_data$Diabetes_Type <- as.factor(train_data$Diabetes_Type)
 
 # Train the Random Forest model
-# Specify your formula: target_variable ~ predictor_variable1 + predictor_variable2 + ...
 # Adjust the formula based on your actual variable names
 rf_model <- randomForest(Diabetes_Type ~ ., data = train_data, ntree = 100)
 
@@ -378,7 +376,6 @@ test_data <- oversampled_dataset[-split_index, ]
 train_data$Diabetes_Type <- as.factor(train_data$Diabetes_Type)
 
 # Train the Random Forest model
-# Specify your formula: target_variable ~ predictor_variable1 + predictor_variable2 + ...
 # Adjust the formula based on your actual variable names
 rf_model_oversampling <- randomForest(Diabetes_Type ~ ., data = train_data, ntree = 100)
 
@@ -410,7 +407,6 @@ test_data <- oversampled_dataset[-split_index, ]
 train_data$Diabetes_Type <- as.factor(train_data$Diabetes_Type)
 
 # Train the Random Forest model
-# Specify your formula: target_variable ~ predictor_variable1 + predictor_variable2 + ...
 # Adjust the formula based on your actual variable names
 rf_model_complete <- randomForest(Diabetes_Type ~ ., data = train_data, ntree = 100)
 
